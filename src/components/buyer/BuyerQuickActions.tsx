@@ -22,7 +22,7 @@ export const BuyerQuickActions: React.FC<BuyerQuickActionsProps> = ({
           return (
             <TouchableOpacity
               key={action.id}
-              activeOpacity={0.82}
+              activeOpacity={0.85}
               style={[
                 styles.actionCard,
                 isActive ? styles.activeCard : styles.inactiveCard,
@@ -82,19 +82,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 2,
   },
   activeCard: {
     backgroundColor: '#203924',
+    // Completely remove box shadow for the active/pressed card
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   inactiveCard: {
-    backgroundColor: '#FFFFFF', 
-    borderWidth: 0.5,
-    borderColor: '#E8E4DA',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#ECE7DC',
+    // Extremely subtle, soft ambient light without harsh box edges
+    shadowColor: '#1B3220',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   iconContainer: {
     width: 36,
@@ -105,6 +112,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   activeIconContainer: {
+    backgroundColor: 'transparent',
+  },
+  inactiveIconContainer: {
     backgroundColor: 'transparent',
   },
   actionLabel: {
