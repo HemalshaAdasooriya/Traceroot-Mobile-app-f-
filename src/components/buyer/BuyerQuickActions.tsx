@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { QuickActionItem } from '../../types/buyer.types';
 
 interface BuyerQuickActionsProps {
@@ -15,7 +15,7 @@ export const BuyerQuickActions: React.FC<BuyerQuickActionsProps> = ({
   return (
     <View style={styles.sectionContainer}>
       <Text style={styles.sectionTitle}>Quick Actions</Text>
-      
+
       <View style={styles.gridRow}>
         {actions.map((action) => {
           const isActive = !!action.isActive;
@@ -85,14 +85,14 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 5,
+    shadowRadius: 20,
     elevation: 2,
   },
   activeCard: {
     backgroundColor: '#203924',
   },
   inactiveCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', 
     borderWidth: 0.5,
     borderColor: '#E8E4DA',
   },
@@ -106,9 +106,6 @@ const styles = StyleSheet.create({
   },
   activeIconContainer: {
     backgroundColor: 'transparent',
-  },
-  inactiveIconContainer: {
-    backgroundColor: '#F1F6F1',
   },
   actionLabel: {
     fontSize: 12,
