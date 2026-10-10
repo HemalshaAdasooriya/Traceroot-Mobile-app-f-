@@ -54,6 +54,12 @@ The following technologies are proposed for the project. The final technology st
 - **Authentication:** JSON Web Tokens (JWT)
 - **Photo Storage:** Cloud storage
 - **Device Features:** Camera and GPS, where required
+  
+## 🎨 UI/UX Design
+
+The TraceRoot mobile application design is created using Figma. The design plan presents the user interface and screen layout for the application.
+
+**Figma Design:** [View TraceRoot UI/UX Design](https://www.figma.com/make/8JP0sObB9oWoS1bai6HQ1c/Refine-Figma-Design-Plan--Copy-?p=f&t=7WJKpQ3tB9MOygmq-0&fullscreen=1)
 
 ## 🌿 GitHub Workflow
 
