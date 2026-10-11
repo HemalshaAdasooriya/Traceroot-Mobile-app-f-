@@ -26,7 +26,7 @@ export default function BuyerTabsLayout() {
 
       {/* 2. Market Screen (Explore) */}
       <Tabs.Screen
-        name="explore"
+        name="explore/index"
         options={{
           title: 'Market',
         }}
@@ -34,7 +34,7 @@ export default function BuyerTabsLayout() {
 
       {/* 3. Orders Screen */}
       <Tabs.Screen
-        name="orders"
+        name="orders/index"
         options={{
           title: 'Orders',
         }}
@@ -42,7 +42,7 @@ export default function BuyerTabsLayout() {
 
       {/* 4. Messages Screen */}
       <Tabs.Screen
-        name="messages"
+        name="messages/index"
         options={{
           title: 'Messages',
         }}
@@ -50,7 +50,7 @@ export default function BuyerTabsLayout() {
 
       {/* 5. Profile Screen */}
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{
           title: 'Profile',
         }}
@@ -58,7 +58,45 @@ export default function BuyerTabsLayout() {
 
       {/* Contracts subflow - hidden from bottom tabs */}
       <Tabs.Screen
-        name="contracts"
+        name="contracts/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="contracts/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="contracts/new"
+        options={{
+          href: null,
+        }}
+      />
+
+      {/* Nested details - hidden from bottom tabs */}
+      <Tabs.Screen
+        name="explore/farmer/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="explore/farmer/[id]/harvest/[harvestId]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="orders/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="messages/[userId]"
         options={{
           href: null,
         }}
