@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 export interface BuyerBottomTabBarProps {
   state: {
@@ -9,14 +10,16 @@ export interface BuyerBottomTabBarProps {
     routes: Array<{ key: string; name: string }>;
   };
   navigation: {
-    emit: (event: { type: string; target?: string; canPreventDefault?: boolean }) => { defaultPrevented: boolean };
-    navigate: (name: string) => void;
+    emit: (event: any) => any;
+    navigate: (name: string, params?: any) => void;
   };
   descriptors?: Record<string, any>;
+  insets?: any;
 }
 
 interface TabConfig {
   name: string;
+  routePath: string;
   label: string;
   badge?: number;
   iconName: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -27,6 +30,7 @@ interface TabConfig {
 const BUYER_TABS: TabConfig[] = [
   {
     name: 'index',
+    routePath: '/(buyer)',
     label: 'Home',
     iconName: 'home',
     focusedIconName: 'home',
@@ -34,6 +38,7 @@ const BUYER_TABS: TabConfig[] = [
   },
   {
     name: 'explore',
+    routePath: '/(buyer)/explore',
     label: 'Market',
     iconName: 'storefront-outline',
     focusedIconName: 'storefront',
@@ -41,6 +46,7 @@ const BUYER_TABS: TabConfig[] = [
   },
   {
     name: 'orders',
+    routePath: '/(buyer)/orders',
     label: 'Orders',
     iconName: 'basket-outline',
     focusedIconName: 'basket',
@@ -48,14 +54,15 @@ const BUYER_TABS: TabConfig[] = [
   },
   {
     name: 'messages',
+    routePath: '/(buyer)/messages',
     label: 'Messages',
-    badge: 1,
     iconName: 'chat-outline',
     focusedIconName: 'chat',
     size: 22,
   },
   {
     name: 'profile',
+    routePath: '/(buyer)/profile',
     label: 'Profile',
     iconName: 'account-cowboy-hat-outline',
     focusedIconName: 'account-cowboy-hat',
@@ -63,19 +70,40 @@ const BUYER_TABS: TabConfig[] = [
   },
 ];
 
-export const BuyerBottomTabBar: React.FC<any> = ({
+export const BuyerBottomTabBar: React.FC<BuyerBottomTabBarProps> = ({
   state,
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
   const bottomMargin = Platform.OS === 'ios' ? Math.max(insets.bottom, 16) : 20;
 
+  const currentRouteName = state.routes[state.index]?.name || '';
+
   return (
     <View style={styles.outerWrapper} pointerEvents="box-none">
       <View style={[styles.barContainer, { marginBottom: bottomMargin }]}>
         {BUYER_TABS.map((tab) => {
-          const routeIndex = state.routes.findIndex((r: { name: string }) => r.name === tab.name);
-          const isFocused = state.index === routeIndex;
+          // Find matching route in navigator routes (e.g. 'explore', 'explore/index')
+          const matchingRouteIndex = state.routes.findIndex((r: { name: string }) => {
+            if (tab.name === 'index') {
+              return r.name === 'index';
+            }
+            return (
+              r.name === tab.name ||
+              r.name === `${tab.name}/index` ||
+              r.name.startsWith(`${tab.name}/`)
+            );
+          });
+
+          const matchingRoute = matchingRouteIndex >= 0 ? state.routes[matchingRouteIndex] : null;
+
+          // Check if this tab is currently the active tab
+          const isFocused =
+            tab.name === 'index'
+              ? currentRouteName === 'index'
+              : currentRouteName === tab.name ||
+                currentRouteName === `${tab.name}/index` ||
+                currentRouteName.startsWith(`${tab.name}/`);
 
           const activeColor = '#FFFFFF';
           const inactiveColor = '#8A9E8D'; // Soft sage green matching design screenshot
@@ -85,14 +113,20 @@ export const BuyerBottomTabBar: React.FC<any> = ({
             : tab.iconName;
 
           const handlePress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: state.routes[routeIndex]?.key,
-              canPreventDefault: true,
-            });
+            const event = matchingRoute
+              ? navigation.emit({
+                  type: 'tabPress',
+                  target: matchingRoute.key,
+                  canPreventDefault: true,
+                })
+              : { defaultPrevented: false };
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(tab.name);
+              if (matchingRoute) {
+                navigation.navigate(matchingRoute.name);
+              } else {
+                router.push(tab.routePath as any);
+              }
             }
           };
 
@@ -190,20 +224,20 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 2,
   },
-  badgePill: {
-    position: 'absolute',
-    top: -3,
-    right: -7,
-    backgroundColor: '#E66722', // Vibrant orange notification badge
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-    borderWidth: 1.5,
-    borderColor: '#1D3724', // Matches capsule background
-  },
+  // badgePill: {
+  //   position: 'absolute',
+  //   top: -3,
+  //   right: -7,
+  //   backgroundColor: '#E66722', // Vibrant orange notification badge
+  //   minWidth: 16,
+  //   height: 16,
+  //   borderRadius: 8,
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  //   paddingHorizontal: 3,
+  //   borderWidth: 1.5,
+  //   borderColor: '#1D3724', // Matches capsule background
+  // },
   badgeNumber: {
     color: '#FFFFFF',
     fontSize: 9.5,
