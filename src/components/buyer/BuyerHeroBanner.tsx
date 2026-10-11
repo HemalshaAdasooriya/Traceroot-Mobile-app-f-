@@ -59,7 +59,7 @@ export const BuyerHeroBanner: React.FC<BuyerHeroBannerProps> = ({
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search verified crops and farmers..."
+              placeholder="Search verified crops..."
               placeholderTextColor="#869686"
               value={searchQuery}
               onChangeText={onSearchChange}
