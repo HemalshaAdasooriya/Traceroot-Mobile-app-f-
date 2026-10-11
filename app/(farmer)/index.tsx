@@ -15,7 +15,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, usePathname } from 'expo-router';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { FarmerWeatherCard } from '../../src/components/farmer/FarmerWeatherCard';
+import { FieldCard } from '../../src/components/farmer/FieldCard';
+import { PhotoOptionsModal } from '../../src/components/farmer/PhotoOptionsModal';
 import {
   mockFarmerProfile,
   mockWeatherMetrics,
@@ -23,11 +26,20 @@ import {
   mockQuickFeatures,
   mockFields,
 } from '../../src/constants/farmerMockData';
+import { FieldItem } from '../../src/types/farmer.types';
 
 export default function FarmerHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   // Ensure the plant growth animation and loop run reliably on dashboard
   const isFocused = true;
+
+  // Fields, Category filter, and Photo picker state
+  const [fields, setFields] = useState<FieldItem[]>(mockFields);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [photoModalVisible, setPhotoModalVisible] = useState(false);
+  const [selectedFieldForPhoto, setSelectedFieldForPhoto] = useState<FieldItem | null>(null);
+
+  const categories = ['All', 'Carrots', 'Vegetable', 'Fruit'];
 
   // Staggered Entrance Animations
   const headerFade = useRef(new Animated.Value(0)).current;
@@ -134,6 +146,102 @@ export default function FarmerHomeScreen() {
     Alert.alert('Search', 'Search through crops, cultivation stages, batches, and records.');
   };
 
+  // Photo change modal handlers
+  const handleOpenPhotoModal = (field: FieldItem) => {
+    setSelectedFieldForPhoto(field);
+    setPhotoModalVisible(true);
+  };
+
+  const handleTakePhoto = async () => {
+    if (!selectedFieldForPhoto) return;
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Camera Access Required',
+          'Please allow camera access in your device settings to take a photo of your field.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newUri = result.assets[0].uri;
+        // Update local state with newly taken photo
+        // TODO: Upload to Supabase Storage and persist URL in database
+        setFields((prev) =>
+          prev.map((f) => (f.id === selectedFieldForPhoto.id ? { ...f, imageUrl: newUri } : f))
+        );
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Could not open camera. Please try again.');
+    }
+  };
+
+  const handleChooseFromGallery = async () => {
+    if (!selectedFieldForPhoto) return;
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Photo Library Access Required',
+          'Please allow photo library access in your device settings to select a field photo.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newUri = result.assets[0].uri;
+        // Update local state with selected photo
+        // TODO: Upload to Supabase Storage and persist URL in database
+        setFields((prev) =>
+          prev.map((f) => (f.id === selectedFieldForPhoto.id ? { ...f, imageUrl: newUri } : f))
+        );
+      }
+    } catch (error) {
+      console.error('Error choosing photo:', error);
+      Alert.alert('Error', 'Could not select photo from gallery. Please try again.');
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    if (!selectedFieldForPhoto) return;
+    // Reset photo for selected field
+    // TODO: Upload to Supabase Storage / remove from database
+    setFields((prev) =>
+      prev.map((f) => (f.id === selectedFieldForPhoto.id ? { ...f, imageUrl: undefined } : f))
+    );
+  };
+
+  const handleNavigateToJourney = (field: FieldItem) => {
+    router.push({
+      pathname: '/(farmer)/harvests/[id]',
+      params: { id: field.id },
+    });
+  };
+
+  const filteredFields =
+    selectedCategory === 'All'
+      ? fields
+      : fields.filter(
+          (f) =>
+            f.category?.toLowerCase() === selectedCategory.toLowerCase() ||
+            f.cropName.toLowerCase().includes(selectedCategory.toLowerCase())
+        );
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4EFE6" />
@@ -222,20 +330,20 @@ export default function FarmerHomeScreen() {
         >
           {/* Card 1: Active crops */}
           <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: '#1B4725' }]}>{displayCrops}</Text>
+            <Text style={[styles.statNumber, { color: '#165B2D' }]}>{displayCrops}</Text>
             <Text style={styles.statLabel}>Active crops</Text>
           </View>
 
           {/* Card 2: Records · Month */}
           <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: '#1B4725' }]}>{displayRecords}</Text>
+            <Text style={[styles.statNumber, { color: '#183820' }]}>{displayRecords}</Text>
             <Text style={styles.statLabel}>Records · {mockFarmerStats.monthName}</Text>
           </View>
 
           {/* Card 3: Ready to harvest */}
           <View style={styles.statCard}>
             <Text style={[styles.statNumber, { color: '#E46724' }]}>{displayHarvest}</Text>
-            <Text style={styles.statLabel}>Ready to harvest</Text>
+            <Text style={[styles.statLabel, { color: '#3A523E' }]}>Ready to harvest</Text>
           </View>
         </Animated.View>
 
@@ -275,7 +383,7 @@ export default function FarmerHomeScreen() {
           </Animated.View>
         </Animated.View>
 
-        {/* 5. Three Rounded Quick Action Cards (My Crops, Trace, Catalogue) */}
+        {/* 5. Three Rounded Quick Action Cards (Crops, Trace, Supplier catalogue) */}
         <Animated.View
           style={[
             styles.quickFeaturesRow,
@@ -285,37 +393,75 @@ export default function FarmerHomeScreen() {
             },
           ]}
         >
-          {mockQuickFeatures.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.featureCard, { backgroundColor: item.bgTint }]}
-              activeOpacity={0.8}
-              onPress={() => item.route && router.push(item.route as any)}
-            >
-              <View style={styles.featureTopRow}>
-                <View style={[styles.featureIconBadge, { backgroundColor: item.themeColor }]}>
-                  <MaterialCommunityIcons
-                    name={item.iconName as any}
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                </View>
-                <View style={styles.featureArrow}>
-                  <Feather name="arrow-up-right" size={13} color="#7E9484" />
-                </View>
-              </View>
+          {mockQuickFeatures.map((item) => {
+            const cardScale = new Animated.Value(1);
 
-              <View style={styles.featureBottom}>
-                <Text style={styles.featureTitle}>{item.title}</Text>
-                <View style={styles.subtextRow}>
-                  {item.badgeDotColor ? (
-                    <View style={[styles.statusDot, { backgroundColor: item.badgeDotColor }]} />
-                  ) : null}
-                  <Text style={styles.featureSubtext}>{item.subtext}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+            const handlePressIn = () => {
+              Animated.spring(cardScale, {
+                toValue: 0.94,
+                useNativeDriver: true,
+                speed: 30,
+                bounciness: 6,
+              }).start();
+            };
+
+            const handlePressOut = () => {
+              Animated.spring(cardScale, {
+                toValue: 1,
+                friction: 4,
+                useNativeDriver: true,
+              }).start();
+            };
+
+            const handleCardPress = () => {
+              if (item.route) {
+                router.push(item.route as any);
+              }
+            };
+
+            return (
+              <Animated.View
+                key={item.id}
+                style={[
+                  styles.featureCardWrapper,
+                  { transform: [{ scale: cardScale }] },
+                ]}
+              >
+                <TouchableOpacity
+                  style={[styles.featureCard, { backgroundColor: item.bgTint }]}
+                  activeOpacity={0.88}
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                  onPress={handleCardPress}
+                >
+                  <View style={styles.featureTopRow}>
+                    <View style={[styles.featureIconBadge, { backgroundColor: item.themeColor }]}>
+                      <MaterialCommunityIcons
+                        name={item.iconName as any}
+                        size={18}
+                        color="#FFFFFF"
+                      />
+                    </View>
+                    <View style={styles.featureArrow}>
+                      <Feather name="arrow-up-right" size={13} color="#2D4D33" />
+                    </View>
+                  </View>
+
+                  <View style={styles.featureBottom}>
+                    <Text style={styles.featureTitle} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <View style={styles.subtextRow}>
+                      {item.badgeDotColor ? (
+                        <View style={[styles.statusDot, { backgroundColor: item.badgeDotColor }]} />
+                      ) : null}
+                      <Text style={styles.featureSubtext}>{item.subtext}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
         </Animated.View>
 
         {/* 6. Section: "My Fields" */}
@@ -333,42 +479,86 @@ export default function FarmerHomeScreen() {
             <TouchableOpacity
               style={styles.seeAllBtn}
               activeOpacity={0.7}
-              onPress={() => router.push('/(farmer)/harvests')}
+              onPress={() => router.push('/(farmer)/crops')}
             >
               <Text style={styles.seeAllText}>See All</Text>
               <Feather name="chevron-right" size={14} color="#5D7A65" />
             </TouchableOpacity>
           </View>
 
-          {/* Field Cards Preview */}
-          {mockFields.map((field) => (
+          {/* Filter Pills: All, Carrots, Vegetable, Fruit */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterPillsContainer}
+            style={styles.filterScrollView}
+          >
+            {categories.map((cat) => {
+              const isActive = selectedCategory === cat;
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.filterPill, isActive && styles.filterPillActive]}
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Horizontal Snapping Field Cards List */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalFieldsContainer}
+            snapToInterval={230}
+            decelerationRate="fast"
+          >
+            {filteredFields.map((field) => (
+              <FieldCard
+                key={field.id}
+                field={field}
+                onPress={() => handleNavigateToJourney(field)}
+                onChangePhotoPress={() => handleOpenPhotoModal(field)}
+                onBookmarkPress={() => {
+                  Alert.alert('Bookmark', `${field.cropName} (${field.plotName}) bookmarked!`);
+                }}
+              />
+            ))}
+
+            {/* "Add Field" Card at end of horizontal row */}
             <TouchableOpacity
-              key={field.id}
-              style={styles.fieldCard}
+              style={styles.addFieldCard}
               activeOpacity={0.8}
-              onPress={() => router.push('/(farmer)/harvests')}
+              onPress={() => router.push('/(farmer)/harvests/new')}
             >
-              <View style={styles.fieldEmojiBadge}>
-                <Text style={styles.fieldEmoji}>{field.cropEmoji}</Text>
+              <View style={styles.addFieldIconCircle}>
+                <Feather name="plus" size={24} color="#2D6B3C" />
               </View>
-
-              <View style={styles.fieldDetails}>
-                <Text style={styles.fieldName}>{field.name}</Text>
-                <Text style={styles.fieldCrop}>
-                  {field.cropName} · {field.areaAcres} acres · {field.stageName}
-                </Text>
-              </View>
-
-              <View style={styles.harvestPill}>
-                <Text style={styles.harvestPillText}>{field.daysToHarvest}d to harvest</Text>
-              </View>
+              <Text style={styles.addFieldTitle}>Add Field</Text>
+              <Text style={styles.addFieldSubtitle}>Register a new crop plot</Text>
             </TouchableOpacity>
-          ))}
+          </ScrollView>
         </Animated.View>
 
         {/* Extra Bottom Spacer for floating bottom tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Photo Change Options Modal */}
+      <PhotoOptionsModal
+        visible={photoModalVisible}
+        fieldName={selectedFieldForPhoto?.plotName || selectedFieldForPhoto?.cropName || 'Field'}
+        hasPhoto={!!selectedFieldForPhoto?.imageUrl}
+        onClose={() => setPhotoModalVisible(false)}
+        onTakePhoto={handleTakePhoto}
+        onChooseFromGallery={handleChooseFromGallery}
+        onRemovePhoto={handleRemovePhoto}
+      />
     </SafeAreaView>
   );
 }
@@ -469,28 +659,32 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    borderRadius: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    alignItems: 'center', // Center justify contents horizontally
+    justifyContent: 'center', // Center justify contents vertically
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 5,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#ECEAE2',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1.2,
+    borderColor: '#E8E5DC',
   },
   statNumber: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    textAlign: 'center',
+    marginBottom: 6,
   },
   statLabel: {
-    fontSize: 11,
-    color: '#6D8271',
-    fontWeight: '500',
-    lineHeight: 14,
+    fontSize: 11.5,
+    color: '#3D5943', // Darker, crisper green-slate text for high contrast and readability
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 15,
   },
   addRecordWrapper: {
     marginBottom: 14,
@@ -545,20 +739,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginBottom: 20,
+    alignItems: 'stretch',
+  },
+  featureCardWrapper: {
+    flex: 1,
   },
   featureCard: {
     flex: 1,
+    height: 126, // Exact uniform height for all 3 cards
     borderRadius: 22,
     padding: 12,
-    minHeight: 108,
     justifyContent: 'space-between',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.04)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 3,
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.7)',
   },
   featureTopRow: {
     flexDirection: 'row',
@@ -566,28 +764,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   featureIconBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
   featureArrow: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   featureBottom: {
-    marginTop: 10,
+    justifyContent: 'flex-end',
   },
   featureTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1C3122',
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#16311D',
     marginBottom: 2,
+    height: 32, // Accommodates both 1-line and 2-line labels identically
+    lineHeight: 15,
   },
   subtextRow: {
     flexDirection: 'row',
@@ -635,57 +842,79 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#5D7A65',
   },
-  fieldCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#ECEAE2',
+  filterScrollView: {
+    marginBottom: 14,
   },
-  fieldEmojiBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: '#F5F2EB',
+  filterPillsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 10,
+  },
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E5DC',
+  },
+  filterPillActive: {
+    backgroundColor: '#1E3C25',
+    borderColor: '#1E3C25',
+  },
+  filterPillText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#556D59',
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  horizontalFieldsContainer: {
+    paddingRight: 10,
+    paddingBottom: 6,
+    alignItems: 'center',
+  },
+  addFieldCard: {
+    width: 170,
+    height: 236,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#C8D6C9',
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(235, 244, 237, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    padding: 16,
+    marginRight: 10,
   },
-  fieldEmoji: {
-    fontSize: 20,
+  addFieldIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  fieldDetails: {
-    flex: 1,
-  },
-  fieldName: {
-    fontSize: 14,
+  addFieldTitle: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#15321B',
-    marginBottom: 2,
+    color: '#16351E',
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  fieldCrop: {
+  addFieldSubtitle: {
     fontSize: 11,
-    color: '#6C8370',
-    fontWeight: '500',
-  },
-  harvestPill: {
-    backgroundColor: '#EBF4ED',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  harvestPillText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#286237',
+    color: '#657E6B',
+    textAlign: 'center',
+    lineHeight: 15,
   },
   bottomSpacer: {
     height: 35,

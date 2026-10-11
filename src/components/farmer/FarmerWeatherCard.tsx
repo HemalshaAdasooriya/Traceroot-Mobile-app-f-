@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ImageBackground, Animated, Easing } from 'react-native';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { PlantGrowthAnimation } from './PlantGrowthAnimation';
 import { WeatherMetrics } from '../../types/farmer.types';
 
 interface FarmerWeatherCardProps {
@@ -15,47 +14,43 @@ export const FarmerWeatherCard: React.FC<FarmerWeatherCardProps> = ({ weather, i
   const sunPulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    let rotateAnim: Animated.CompositeAnimation | null = null;
-    let pulseAnim: Animated.CompositeAnimation | null = null;
+    const rotateAnim = Animated.loop(
+      Animated.timing(sunRotation, {
+        toValue: 1,
+        duration: 18000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+
+    const pulseAnim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sunPulse, {
+          toValue: 1.15,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(sunPulse, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
 
     if (isFocused) {
-      // 360 degree slow calm continuous rotation (18s per full spin)
-      rotateAnim = Animated.loop(
-        Animated.timing(sunRotation, {
-          toValue: 1,
-          duration: 18000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      );
       rotateAnim.start();
-
-      // Soft sun breathing pulse (2.8s cycle)
-      pulseAnim = Animated.loop(
-        Animated.sequence([
-          Animated.timing(sunPulse, {
-            toValue: 1.15,
-            duration: 1400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(sunPulse, {
-            toValue: 1,
-            duration: 1400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      );
       pulseAnim.start();
     } else {
-      if (rotateAnim) rotateAnim.stop();
-      if (pulseAnim) pulseAnim.stop();
+      rotateAnim.stop();
+      pulseAnim.stop();
     }
 
     return () => {
-      if (rotateAnim) rotateAnim.stop();
-      if (pulseAnim) pulseAnim.stop();
+      rotateAnim.stop();
+      pulseAnim.stop();
     };
   }, [isFocused]);
 
@@ -113,10 +108,8 @@ export const FarmerWeatherCard: React.FC<FarmerWeatherCardProps> = ({ weather, i
         </View>
       </View>
 
-      {/* 4. Center Plant Growth & Watering Animation Canvas */}
-      <View style={styles.animationCanvas}>
-        <PlantGrowthAnimation isFocused={isFocused} />
-      </View>
+      {/* 4. Center Spacer displaying the clean background clearly */}
+      <View style={styles.centerSpacer} />
 
       {/* 5. Bottom Frosted-Glass Stats Panel */}
       <View style={styles.glassMetricsRow}>
@@ -321,11 +314,9 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
 
-  // Center Canvas
-  animationCanvas: {
-    height: 104,
-    marginVertical: 6,
-    zIndex: 1,
+  // Center space displaying clean hands background
+  centerSpacer: {
+    height: 76,
   },
 
   // Bottom Frosted Glass Stats Panel

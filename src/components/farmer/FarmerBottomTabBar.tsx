@@ -4,16 +4,11 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface FarmerBottomTabBarProps {
-  state: {
-    index: number;
-    routes: Array<{ key: string; name: string }>;
-  };
-  navigation: {
-    emit: (event: { type: string; target?: string; canPreventDefault?: boolean }) => { defaultPrevented: boolean };
-    navigate: (name: string) => void;
-  };
+  state: any;
+  navigation: any;
   descriptors?: Record<string, any>;
   onAddPress?: () => void;
+  [key: string]: any;
 }
 
 export const FarmerBottomTabBar: React.FC<FarmerBottomTabBarProps> = ({
@@ -27,7 +22,7 @@ export const FarmerBottomTabBar: React.FC<FarmerBottomTabBarProps> = ({
   const currentRouteName = state.routes[state.index]?.name;
 
   const navigateTab = (routeName: string) => {
-    const routeIndex = state.routes.findIndex((r) => r.name === routeName);
+    const routeIndex = state.routes.findIndex((r: any) => r.name === routeName);
     if (routeIndex !== -1) {
       const event = navigation.emit({
         type: 'tabPress',
