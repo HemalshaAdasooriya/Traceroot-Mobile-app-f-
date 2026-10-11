@@ -76,7 +76,21 @@ export default function RegisterScreen() {
     if (validate()) {
       // TODO: Connect to Supabase auth
       console.log('Registering with:', { role, name, email, password });
-      router.replace('/(auth)/login'); // Temporary fallback, should go to tabs eventually
+      
+      if (role === 'farmer') {
+        router.replace({
+          pathname: '/(auth)/register-farmer',
+          params: { name, email, role },
+        });
+      } else if (role === 'buyer') {
+        router.replace({
+          pathname: '/(auth)/register-buyer',
+          params: { name, email, role },
+        });
+      } else if (role === 'supplier') {
+        // TODO: Supplier registration navigation / setup screen
+        console.log('TODO: Supplier setup screen');
+      }
     }
   };
 
