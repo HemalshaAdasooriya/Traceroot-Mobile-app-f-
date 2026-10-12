@@ -75,10 +75,17 @@ export default function RegisterScreen() {
   const handleSignUp = () => {
     if (validate()) {
       console.log('Registering with:', { role, name, email, password });
-      if (role === 'buyer') {
-        router.replace('/(buyer)');
-      } else if (role === 'farmer') {
-        router.replace('/(farmer)');
+      
+      if (role === 'farmer') {
+        router.replace({
+          pathname: '/(auth)/register-farmer',
+          params: { name, email, role },
+        });
+      } else if (role === 'buyer') {
+        router.replace({
+          pathname: '/(auth)/register-buyer',
+          params: { name, email, role },
+        });
       } else if (role === 'supplier') {
         router.replace('/(supplier)');
       } else {
